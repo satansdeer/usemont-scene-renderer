@@ -1,0 +1,32 @@
+{
+  "name": "@usemont/scene-renderer",
+  "version": "0.0.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "prebuild": "pnpm --filter @usemont/scene-model build",
+    "build": "tsc -p tsconfig.json",
+    "precheck": "pnpm --filter @usemont/scene-model build",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "pnpm run check"
+  },
+  "dependencies": {
+    "@usemont/scene-model": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.3"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "usemont-scene-renderer",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "pnpm@10.17.1",
+  "scripts": {
+    "build": "pnpm packages:build",
+    "check": "pnpm packages:check && pnpm packages:boundaries && pnpm packages:pack-check",
+    "test": "pnpm check",
+    "packages:build": "pnpm --filter @usemont/scene-model build && pnpm --filter @usemont/scene-renderer build",
+    "packages:check": "pnpm --filter @usemont/scene-model check && pnpm --filter @usemont/scene-renderer check",
+    "packages:boundaries": "node scripts/check-public-package-boundaries.mjs",
+    "packages:pack-check": "node scripts/validate-public-renderer-packages.mjs"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.3"
+  }
+}

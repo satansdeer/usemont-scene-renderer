@@ -1,0 +1,31 @@
+{
+  "name": "@usemont/scene-model",
+  "version": "0.0.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./shapes": {
+      "types": "./dist/shapes.d.ts",
+      "import": "./dist/shapes.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "pnpm run check"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.3"
+  }
+}
