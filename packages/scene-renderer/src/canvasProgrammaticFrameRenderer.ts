@@ -1,12 +1,9 @@
 import type { SceneConfig, Visual } from '@usemont/scene-model';
-
-export type SceneRendererLiteral =
-  | string
-  | number
-  | boolean
-  | null
-  | SceneRendererLiteral[]
-  | { [key: string]: SceneRendererLiteral };
+import {
+  createProgrammaticSceneFramePlan,
+  readVisualAttribute,
+  type SceneRendererLiteral
+} from './programmaticFramePlan.js';
 
 export type SceneRendererCanvas = HTMLCanvasElement | OffscreenCanvas;
 
@@ -63,6 +60,8 @@ export function drawProgrammaticSceneFrame(
     unsupportedVisualTypes: []
   };
   if (!context) return result;
+  const plan = createProgrammaticSceneFramePlan({ visuals: options.visuals });
+  result.unsupportedVisualTypes.push(...plan.unsupportedVisualTypes);
 
   context.save();
   context.setTransform(ratio, 0, 0, ratio, 0, 0);
@@ -72,7 +71,7 @@ export function drawProgrammaticSceneFrame(
   context.fillStyle = options.background ?? options.sceneConfig?.backgroundColor ?? '#0f172a';
   context.fillRect(0, 0, options.sceneWidth, options.sceneHeight);
 
-  for (const visual of [...options.visuals].sort(compareVisualLayer)) {
+  for (const visual of plan.visuals) {
     drawVisual(context, visual, options, result);
   }
   context.restore();
@@ -80,87 +79,10 @@ export function drawProgrammaticSceneFrame(
   return result;
 }
 
-export function readVisualAttribute(
-  visual: Visual,
-  key: string
-): SceneRendererLiteral | undefined {
-  const attributeAliases: Record<string, string[]> = {
-    text: ['content'],
-    size: ['fontSize'],
-    color: ['fill'],
-    weight: ['fontWeight'],
-    align: ['textAlign'],
-    radius: ['cornerRadius']
-  };
-  const attributes = visual.attributes as unknown;
-  const read = (candidateKey: string): SceneRendererLiteral | undefined => {
-    if (attributes instanceof Map) {
-      return normalizeLiteral(attributes.get(candidateKey));
-    }
-    if (typeof attributes === 'object' && attributes !== null) {
-      return normalizeLiteral((attributes as Record<string, unknown>)[candidateKey]);
-    }
-    return undefined;
-  };
-  const direct = read(key);
-  if (direct !== undefined) return direct;
-  for (const alias of attributeAliases[key] ?? []) {
-    const aliased = read(alias);
-    if (aliased !== undefined) return aliased;
-  }
-  if (key === 'text') {
-    const proseMirrorText = extractProseMirrorText(read('proseMirrorDocument'));
-    if (proseMirrorText) return proseMirrorText;
-  }
-  return undefined;
-}
-
-function normalizeLiteral(value: unknown): SceneRendererLiteral | undefined {
-  if (
-    value === null ||
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean'
-  ) {
-    return value;
-  }
-  if (Array.isArray(value)) {
-    return value.map((item) => normalizeLiteral(item) ?? null);
-  }
-  if (typeof value === 'object' && value !== null) {
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>).map(([key, item]) => [
-        key,
-        normalizeLiteral(item) ?? null
-      ])
-    );
-  }
-  return undefined;
-}
-
 function browserDevicePixelRatio(): number {
   return typeof globalThis.devicePixelRatio === 'number' && Number.isFinite(globalThis.devicePixelRatio)
     ? globalThis.devicePixelRatio
     : 1;
-}
-
-function extractProseMirrorText(value: SceneRendererLiteral | undefined): string {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return '';
-  const content = (value as { content?: unknown }).content;
-  if (!Array.isArray(content)) return '';
-  return content.map((node) => extractProseMirrorNodeText(node)).filter(Boolean).join('\n');
-}
-
-function extractProseMirrorNodeText(node: unknown): string {
-  if (typeof node !== 'object' || node === null) return '';
-  const record = node as { text?: unknown; content?: unknown };
-  if (typeof record.text === 'string') return record.text;
-  if (!Array.isArray(record.content)) return '';
-  return record.content.map((child) => extractProseMirrorNodeText(child)).join('');
-}
-
-function compareVisualLayer(left: Visual, right: Visual): number {
-  return finiteNumber(readVisualAttribute(left, 'layer'), 0) - finiteNumber(readVisualAttribute(right, 'layer'), 0);
 }
 
 function drawVisual(
@@ -187,6 +109,12 @@ function drawVisual(
     case 'star':
       drawPolygon(context, visual);
       break;
+    case 'arc':
+      drawArc(context, visual);
+      break;
+    case 'calloutBox':
+      drawCalloutBox(context, visual);
+      break;
     case 'line':
     case 'arrow':
     case 'turnArrow':
@@ -212,7 +140,7 @@ function drawVisual(
       drawGroup(context, visual);
       break;
     default:
-      result.unsupportedVisualTypes.push(String(visual.type));
+      pushUnsupportedVisualType(result, String(visual.type));
       drawMediaPlaceholder(context, visual, String(visual.type));
       break;
   }
@@ -221,6 +149,10 @@ function drawVisual(
     for (const child of visual.children) drawVisual(context, child, options, result);
   }
   context.restore();
+}
+
+function pushUnsupportedVisualType(result: ProgrammaticSceneFrameRenderResult, type: string): void {
+  if (!result.unsupportedVisualTypes.includes(type)) result.unsupportedVisualTypes.push(type);
 }
 
 function drawGroup(context: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, visual: Visual): void {
@@ -295,6 +227,82 @@ function drawPolygon(context: CanvasRenderingContext2D | OffscreenCanvasRenderin
     if (index === 0) context.moveTo(point.x, point.y);
     else context.lineTo(point.x, point.y);
   });
+  context.closePath();
+  fillAndStroke(context, visual);
+}
+
+function drawArc(context: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, visual: Visual): void {
+  const x = finiteNumber(readVisualAttribute(visual, 'x'), 0);
+  const y = finiteNumber(readVisualAttribute(visual, 'y'), 0);
+  const width = finiteNumber(readVisualAttribute(visual, 'width'), 100);
+  const height = finiteNumber(readVisualAttribute(visual, 'height'), 100);
+  const sweepPercent = Math.max(0, Math.min(100, finiteNumber(readVisualAttribute(visual, 'arcSweepPercent'), 75)));
+  const thicknessPercent = Math.max(1, Math.min(100, finiteNumber(readVisualAttribute(visual, 'arcThicknessPercent'), 35)));
+  const cx = x + width / 2;
+  const cy = y + height / 2;
+  const outerRadius = Math.max(1, Math.min(width, height) / 2);
+  const innerRadius = Math.max(1, outerRadius * (1 - thicknessPercent / 100));
+  const startAngle = -Math.PI / 2;
+  const endAngle = startAngle + Math.PI * 2 * (sweepPercent / 100);
+  context.beginPath();
+  context.arc(cx, cy, outerRadius, startAngle, endAngle);
+  context.arc(cx, cy, innerRadius, endAngle, startAngle, true);
+  context.closePath();
+  fillAndStroke(context, visual);
+}
+
+function drawCalloutBox(context: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, visual: Visual): void {
+  const x = finiteNumber(readVisualAttribute(visual, 'x'), 0);
+  const y = finiteNumber(readVisualAttribute(visual, 'y'), 0);
+  const width = finiteNumber(readVisualAttribute(visual, 'width'), 220);
+  const height = finiteNumber(readVisualAttribute(visual, 'height'), 120);
+  const radius = Math.max(0, finiteNumber(readVisualAttribute(visual, 'radius'), 18));
+  const pointerSide = literalString(readVisualAttribute(visual, 'calloutPointerSide'), 'none');
+  const pointerOffsetPercent = Math.max(0, Math.min(100, finiteNumber(readVisualAttribute(visual, 'calloutPointerOffsetPercent'), 50)));
+  const pointerWidth = Math.max(0, finiteNumber(readVisualAttribute(visual, 'calloutPointerWidthPx'), 48));
+  const pointerHeight = Math.max(0, finiteNumber(readVisualAttribute(visual, 'calloutPointerHeightPx'), 26));
+  const insetTop = pointerSide === 'top' ? pointerHeight : 0;
+  const insetRight = pointerSide === 'right' ? pointerHeight : 0;
+  const insetBottom = pointerSide === 'bottom' ? pointerHeight : 0;
+  const insetLeft = pointerSide === 'left' ? pointerHeight : 0;
+  const bx = x + insetLeft;
+  const by = y + insetTop;
+  const bw = Math.max(1, width - insetLeft - insetRight);
+  const bh = Math.max(1, height - insetTop - insetBottom);
+  const clampedRadius = Math.min(radius, bw / 2, bh / 2);
+  const pointerCenterX = bx + bw * (pointerOffsetPercent / 100);
+  const pointerCenterY = by + bh * (pointerOffsetPercent / 100);
+
+  context.beginPath();
+  context.moveTo(bx + clampedRadius, by);
+  if (pointerSide === 'top') {
+    context.lineTo(Math.max(bx + clampedRadius, pointerCenterX - pointerWidth / 2), by);
+    context.lineTo(pointerCenterX, y);
+    context.lineTo(Math.min(bx + bw - clampedRadius, pointerCenterX + pointerWidth / 2), by);
+  }
+  context.lineTo(bx + bw - clampedRadius, by);
+  context.quadraticCurveTo(bx + bw, by, bx + bw, by + clampedRadius);
+  if (pointerSide === 'right') {
+    context.lineTo(bx + bw, Math.max(by + clampedRadius, pointerCenterY - pointerWidth / 2));
+    context.lineTo(x + width, pointerCenterY);
+    context.lineTo(bx + bw, Math.min(by + bh - clampedRadius, pointerCenterY + pointerWidth / 2));
+  }
+  context.lineTo(bx + bw, by + bh - clampedRadius);
+  context.quadraticCurveTo(bx + bw, by + bh, bx + bw - clampedRadius, by + bh);
+  if (pointerSide === 'bottom') {
+    context.lineTo(Math.min(bx + bw - clampedRadius, pointerCenterX + pointerWidth / 2), by + bh);
+    context.lineTo(pointerCenterX, y + height);
+    context.lineTo(Math.max(bx + clampedRadius, pointerCenterX - pointerWidth / 2), by + bh);
+  }
+  context.lineTo(bx + clampedRadius, by + bh);
+  context.quadraticCurveTo(bx, by + bh, bx, by + bh - clampedRadius);
+  if (pointerSide === 'left') {
+    context.lineTo(bx, Math.min(by + bh - clampedRadius, pointerCenterY + pointerWidth / 2));
+    context.lineTo(x, pointerCenterY);
+    context.lineTo(bx, Math.max(by + clampedRadius, pointerCenterY - pointerWidth / 2));
+  }
+  context.lineTo(bx, by + clampedRadius);
+  context.quadraticCurveTo(bx, by, bx + clampedRadius, by);
   context.closePath();
   fillAndStroke(context, visual);
 }

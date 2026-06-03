@@ -21,8 +21,16 @@ pnpm build
 `pnpm check` runs:
 
 - TypeScript checks for all packages.
+- Deterministic programmatic renderer smoke coverage for representative templates.
+- Real-browser canvas smoke coverage for the shared renderer host.
 - Public package boundary checks.
 - `npm pack` plus clean consumer install/import validation.
+
+The browser smoke uses Playwright Chromium. On a fresh machine, install the browser once:
+
+```sh
+pnpm exec playwright install chromium
+```
 
 ## Local Consumer Linking
 
@@ -38,6 +46,8 @@ For local development, keep those imports unchanged and link the packages at the
 ## Public Boundary
 
 Public packages must not import Mont app internals such as `$lib`, `$types`, Supabase, API server code, telemetry, MCP, backend code, or editor stores. Provider interfaces should be used for assets, fonts, media loading, diagnostics, and optional telemetry.
+
+The staged WebGPU extraction path is documented in [docs/webgpu-programmatic-frame-backend.md](docs/webgpu-programmatic-frame-backend.md).
 
 ## Publishing
 

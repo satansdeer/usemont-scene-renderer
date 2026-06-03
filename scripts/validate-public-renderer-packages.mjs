@@ -72,12 +72,14 @@ try {
     [
       "import { createVisual } from '@usemont/scene-model';",
       "import { compileProgrammaticSpanTsx } from '@usemont/programmatic-spans';",
-      "import { drawProgrammaticSceneFrame } from '@usemont/scene-renderer';",
+      "import { createProgrammaticSceneFramePlan, drawProgrammaticSceneFrame } from '@usemont/scene-renderer';",
       "const visual = createVisual('shape', 'shape-kf', 'rect', { x: 0, y: 0, width: 10, height: 10 });",
       "if (visual.type !== 'rect') throw new Error('scene-model import failed');",
       "const compiled = compileProgrammaticSpanTsx('export default defineSpanScene({ id: \"smoke\", width: 100, height: 100, durationMs: 1000, render() { return <Scene><Rect id=\"box\" x={0} y={0} width={10} height={10} /></Scene>; } });');",
       "if (!compiled.spec) throw new Error('programmatic-spans import failed');",
-      "if (typeof drawProgrammaticSceneFrame !== 'function') throw new Error('scene-renderer import failed');"
+      "if (typeof drawProgrammaticSceneFrame !== 'function') throw new Error('scene-renderer import failed');",
+      "const plan = createProgrammaticSceneFramePlan({ visuals: [visual] });",
+      "if (plan.visuals[0]?.id !== 'shape') throw new Error('scene-renderer frame plan failed');"
     ].join('\n')
   );
   await run('node', ['smoke.mjs'], consumerDir);

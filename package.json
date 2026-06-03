@@ -6,14 +6,17 @@
   "packageManager": "pnpm@10.17.1",
   "scripts": {
     "build": "pnpm packages:build",
-    "check": "pnpm packages:check && pnpm packages:boundaries && pnpm packages:pack-check",
+    "check": "pnpm packages:check && pnpm packages:renderer-smoke && pnpm packages:browser-smoke && pnpm packages:boundaries && pnpm packages:pack-check",
     "test": "pnpm check",
     "packages:build": "pnpm --filter @usemont/scene-model build && pnpm --filter @usemont/programmatic-spans build && pnpm --filter @usemont/scene-renderer build",
     "packages:check": "pnpm --filter @usemont/scene-model check && pnpm --filter @usemont/programmatic-spans check && pnpm --filter @usemont/scene-renderer check",
+    "packages:renderer-smoke": "pnpm packages:build && node scripts/smoke-programmatic-renderer.mjs",
+    "packages:browser-smoke": "pnpm packages:build && node scripts/smoke-browser-renderer.mjs",
     "packages:boundaries": "node scripts/check-public-package-boundaries.mjs",
     "packages:pack-check": "node scripts/validate-public-renderer-packages.mjs"
   },
   "devDependencies": {
+    "playwright": "^1.60.0",
     "typescript": "~5.8.3"
   }
 }

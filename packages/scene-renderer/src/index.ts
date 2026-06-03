@@ -1,5 +1,6 @@
 import type { SceneConfig, Visual } from '@usemont/scene-model';
 export * from './canvasProgrammaticFrameRenderer.js';
+export * from './programmaticFramePlan.js';
 
 export type SceneRendererAssetRequest = {
   src: string;
