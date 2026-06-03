@@ -1,7 +1,7 @@
 {
   "name": "usemont-scene-renderer",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "packageManager": "pnpm@10.17.1",
   "scripts": {
