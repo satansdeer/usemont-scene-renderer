@@ -8,8 +8,8 @@
     "build": "pnpm packages:build",
     "check": "pnpm packages:check && pnpm packages:boundaries && pnpm packages:pack-check",
     "test": "pnpm check",
-    "packages:build": "pnpm --filter @usemont/scene-model build && pnpm --filter @usemont/scene-renderer build",
-    "packages:check": "pnpm --filter @usemont/scene-model check && pnpm --filter @usemont/scene-renderer check",
+    "packages:build": "pnpm --filter @usemont/scene-model build && pnpm --filter @usemont/programmatic-spans build && pnpm --filter @usemont/scene-renderer build",
+    "packages:check": "pnpm --filter @usemont/scene-model check && pnpm --filter @usemont/programmatic-spans check && pnpm --filter @usemont/scene-renderer check",
     "packages:boundaries": "node scripts/check-public-package-boundaries.mjs",
     "packages:pack-check": "node scripts/validate-public-renderer-packages.mjs"
   },

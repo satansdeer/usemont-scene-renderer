@@ -5,6 +5,7 @@ Public scene model and programmatic frame renderer packages used by Mont and the
 ## Packages
 
 - `@usemont/scene-model` - public visual IR, scene config, shape helpers, interpolation helpers, and `createVisual`.
+- `@usemont/programmatic-spans` - TSX compiler, evaluator, Taffy layout, settings/tokens, default assets, presets, and procedural visual helpers for programmatic template frames.
 - `@usemont/scene-renderer` - reusable programmatic frame renderer APIs for authoring/preview surfaces.
 
 V1 scope is programmatic template frames. The full Mont timeline/editor renderer, project state adapters, auth, media authorization, telemetry, catalog, and LLM integrations stay outside this repository.
@@ -19,7 +20,7 @@ pnpm build
 
 `pnpm check` runs:
 
-- TypeScript checks for both packages.
+- TypeScript checks for all packages.
 - Public package boundary checks.
 - `npm pack` plus clean consumer install/import validation.
 
@@ -32,12 +33,14 @@ Public packages must not import Mont app internals such as `$lib`, `$types`, Sup
 Publish order:
 
 1. `@usemont/scene-model`
-2. `@usemont/scene-renderer`
+2. `@usemont/programmatic-spans`
+3. `@usemont/scene-renderer`
 
 Use `0.x` versions until the frame/visual contract stabilizes. Before publishing, run:
 
 ```sh
 pnpm check
 pnpm --filter @usemont/scene-model publish --access public
+pnpm --filter @usemont/programmatic-spans publish --access public
 pnpm --filter @usemont/scene-renderer publish --access public
 ```

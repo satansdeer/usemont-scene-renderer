@@ -18,6 +18,11 @@ const publicPackages = [
     tarballPrefix: 'usemont-scene-model-'
   },
   {
+    name: '@usemont/programmatic-spans',
+    directory: path.join(repoRoot, 'packages/programmatic-spans'),
+    tarballPrefix: 'usemont-programmatic-spans-'
+  },
+  {
     name: '@usemont/scene-renderer',
     directory: path.join(repoRoot, 'packages/scene-renderer'),
     tarballPrefix: 'usemont-scene-renderer-'
@@ -57,6 +62,7 @@ try {
       '--cache',
       npmCacheDir,
       tarballs.get('@usemont/scene-model'),
+      tarballs.get('@usemont/programmatic-spans'),
       tarballs.get('@usemont/scene-renderer')
     ],
     consumerDir
@@ -65,9 +71,12 @@ try {
     path.join(consumerDir, 'smoke.mjs'),
     [
       "import { createVisual } from '@usemont/scene-model';",
+      "import { compileProgrammaticSpanTsx } from '@usemont/programmatic-spans';",
       "import { drawProgrammaticSceneFrame } from '@usemont/scene-renderer';",
       "const visual = createVisual('shape', 'shape-kf', 'rect', { x: 0, y: 0, width: 10, height: 10 });",
       "if (visual.type !== 'rect') throw new Error('scene-model import failed');",
+      "const compiled = compileProgrammaticSpanTsx('export default defineSpanScene({ id: \"smoke\", width: 100, height: 100, durationMs: 1000, render() { return <Scene><Rect id=\"box\" x={0} y={0} width={10} height={10} /></Scene>; } });');",
+      "if (!compiled.spec) throw new Error('programmatic-spans import failed');",
       "if (typeof drawProgrammaticSceneFrame !== 'function') throw new Error('scene-renderer import failed');"
     ].join('\n')
   );

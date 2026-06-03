@@ -1,0 +1,39 @@
+{
+  "name": "@usemont/programmatic-spans",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./authoring": {
+      "types": "./dist/authoring.d.ts",
+      "import": "./dist/authoring.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "prebuild": "pnpm --filter @usemont/scene-model build",
+    "build": "tsc -p tsconfig.json",
+    "precheck": "pnpm --filter @usemont/scene-model build",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "pnpm run check"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.28.4",
+    "@usemont/scene-model": "workspace:*",
+    "taffy-layout": "^2.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.10",
+    "typescript": "~5.8.3"
+  }
+}
