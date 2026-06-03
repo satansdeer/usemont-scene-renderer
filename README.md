@@ -24,6 +24,17 @@ pnpm build
 - Public package boundary checks.
 - `npm pack` plus clean consumer install/import validation.
 
+## Local Consumer Linking
+
+Consumers should import the published package names directly:
+
+```ts
+import { compileProgrammaticSpanTsx } from '@usemont/programmatic-spans';
+import { drawProgrammaticSceneFrame } from '@usemont/scene-renderer';
+```
+
+For local development, keep those imports unchanged and link the packages at the package-manager layer. In a consumer repo, prefer `pnpm.overrides`, `pnpm link`, or workspace protocol overrides that point `@usemont/scene-model`, `@usemont/programmatic-spans`, and `@usemont/scene-renderer` at this checkout. Do not add source imports to Mont app internals or to this repository's `src` paths.
+
 ## Public Boundary
 
 Public packages must not import Mont app internals such as `$lib`, `$types`, Supabase, API server code, telemetry, MCP, backend code, or editor stores. Provider interfaces should be used for assets, fonts, media loading, diagnostics, and optional telemetry.
